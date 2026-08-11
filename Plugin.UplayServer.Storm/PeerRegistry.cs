@@ -12,14 +12,21 @@ internal sealed class StormPeer
 
     public IPEndPoint? TraversalAddr { get; set; }
     public bool Introduced { get; set; }
+    public IPEndPoint? RelayAddr { get; set; }
 
+    private const int MaxCandidates = 8;
 
     public List<IPEndPoint> Candidates { get; } = [];
 
     public void AddCandidate(IPAddress ip, int port)
     {
-        if (!Candidates.Any(c => c.Address.Equals(ip) && c.Port == port))
-            Candidates.Add(new IPEndPoint(ip, port));
+        if (Candidates.Any(c => c.Address.Equals(ip) && c.Port == port))
+            return;
+        // Index 0 is the configured game port seeded at registration; evict the
+        // oldest candidate so that default always survives.
+        if (Candidates.Count >= MaxCandidates)
+            Candidates.RemoveAt(1);
+        Candidates.Add(new IPEndPoint(ip, port));
     }
 }
 

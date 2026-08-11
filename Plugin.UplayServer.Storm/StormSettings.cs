@@ -16,6 +16,13 @@ public sealed class StormSettings
     public int MaxPeers { get; set; } = 2;
 
     public string HostHint { get; set; } = string.Empty;
-    //TODO remove hardcoded value
-    public string AppIdHex { get; set; } = "4eb9089b324e4e65a0555ea05cfeb68f";
+
+    /// <summary>
+    /// 16-byte Ubi AppId(s), hex, one per title this box relays for.
+    /// </summary>
+    public List<string> AppIdHexes { get; set; } =
+    [
+        "4eb9089b324e4e65a0555ea05cfeb68f", // Far Cry New Dawn
+        "e0b29a98ce384bc796ee9d20e793e9e3", // Far Cry 5
+    ];
 }
