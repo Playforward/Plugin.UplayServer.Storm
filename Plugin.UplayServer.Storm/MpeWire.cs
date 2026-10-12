@@ -26,6 +26,35 @@ internal static class MpeWire
 
     public const int ShortFrameLen = 28;
 
+    public static readonly byte[] DetectBodyPrefix =
+        [0x00, 0x00, 0x90, 0x00, 0x00, 0x00, 0x00];
+
+    /// <summary>
+    /// Detect reply, matching the real server's wire format exactly:
+    ///   [u16 BE total length][u16 BE type][u8 seq][u8 result][body]
+    /// with the 13-byte body being <see cref="DetectBodyPrefix"/> followed by
+    /// the client's observed public endpoint, IP first then port.
+    ///
+    ///   real request  000d 0001 00 00 617648fdef0b20
+    ///   real reply    0013 0001 00 02 0000900000000032d28db62328
+    ///
+    /// The sequence byte is at offset 4 of the request and MUST be echoed:
+    /// a real client walks it 00,01,02.. across the whole detection run and
+    /// drops replies that do not match the request it sent.
+    /// </summary>
+    public static byte[] DetectReply(ushort type, byte seq, IPAddress ip, int port)
+    {
+        var reply = new byte[19];
+        BinaryPrimitives.WriteUInt16BigEndian(reply.AsSpan(0), (ushort)reply.Length);
+        BinaryPrimitives.WriteUInt16BigEndian(reply.AsSpan(2), type);
+        reply[4] = seq;
+        reply[5] = 0x02;
+        DetectBodyPrefix.CopyTo(reply, 6);
+        ip.MapToIPv4().GetAddressBytes().CopyTo(reply, 13);
+        BinaryPrimitives.WriteUInt16BigEndian(reply.AsSpan(17), (ushort)port);
+        return reply;
+    }
+
     public static byte[] CandidateTlv(IPAddress ip, int port)
     {
         var tlv = new byte[8];

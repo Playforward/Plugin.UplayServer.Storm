@@ -20,15 +20,14 @@ internal sealed class StormResponder(StormSettings settings)
 
     public void HandleDetect(ReadOnlySpan<byte> data, IPEndPoint src)
     {
-        ushort seq = data.Length >= 4 ? BinaryPrimitives.ReadUInt16BigEndian(data[2..4]) : (ushort)0;
-        var reply = new byte[4 + 8];
-        reply[0] = MpeWire.TypeAck;
-        reply[1] = MpeWire.FlagDetect;
-        BinaryPrimitives.WriteUInt16BigEndian(reply.AsSpan(2), seq);
-        MpeWire.CandidateTlv(src.Address, src.Port).CopyTo(reply, 4);
+        ushort type = data.Length >= 4 ? BinaryPrimitives.ReadUInt16BigEndian(data[2..4]) : (ushort)1;
+        byte seq = data.Length >= 5 ? data[4] : (byte)0;
+
+        var reply = MpeWire.DetectReply(type, seq, src.Address, src.Port);
         Send(reply, src);
         _peers.Resolve(src)?.AddCandidate(src.Address, src.Port);
-        Log.Debug("[storm] detect  <- {Src}: echo {Ip}:{Port}", src, src.Address, src.Port);
+        Log.Debug("[storm] detect  <- {Src}: type=0x{Type:x4} seq={Seq} echo {Ip}:{Port} ({Len}B)",
+            src, type, seq, src.Address, src.Port, reply.Length);
     }
 
     public void HandleTraversal(ReadOnlySpan<byte> data, IPEndPoint src)
